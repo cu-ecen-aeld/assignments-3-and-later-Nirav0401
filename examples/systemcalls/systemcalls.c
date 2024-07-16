@@ -1,4 +1,11 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 /**
  * @param cmd the command to execute with system()
@@ -17,7 +24,14 @@ bool do_system(const char *cmd)
  *   or false() if it returned a failure
 */
 
-    return true;
+    int rc;
+    rc = system(cmd);
+
+    // If cmd is NULL, system() just checks if a shell is avaiable
+    if (cmd == NULL)
+        return (rc != 0);
+
+    return (rc == 0);
 }
 
 /**
@@ -45,9 +59,7 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
+    va_end(args);
 
 /*
  * TODO:
@@ -58,10 +70,32 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    
+    pid_t pid;
+    pid = fork();
 
-    va_end(args);
+    if (pid == -1) {
+        perror("fork");
+        return false;
+    }
 
-    return true;
+    // Child, should execv into process
+    if (pid == 0) {
+        execv(command[0], &command[0]);        
+        perror("execv");
+        exit(EXIT_FAILURE);
+    }
+
+    // Parent, wait for child termination
+    int status;
+    if (waitpid(pid, &status, 0) == -1) {
+        perror("wait");
+    } else if (WIFEXITED(status)) { // child exited normally
+        return (WEXITSTATUS(status) == 0);
+    }
+
+    return false;
+
 }
 
 /**
@@ -80,9 +114,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
-    // this line is to avoid a compile warning before your implementation is complete
-    // and may be removed
-    command[count] = command[count];
+    va_end(args);
 
 
 /*
@@ -93,7 +125,40 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */
 
-    va_end(args);
+    int fd, pid;
 
-    return true;
+    fd = creat(outputfile, 0644);
+    if (fd == -1) {
+        perror("creat");
+        return false;
+    }
+
+    pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        return false;
+    }
+
+    if (pid == 0) {        
+        int ret;
+        // redirect stdout to this file descriptor
+        ret = dup2(fd, 1);
+        if (ret == -1) {
+            perror("dup2 could not redirect stdout");
+            exit(false);
+        }
+
+        execv(command[0], &command[0]);
+        perror("execv");
+        exit(false);
+    }
+
+    int status;
+    if (waitpid(pid, &status, 0) == -1) {
+        perror("wait");
+    } else if (WIFEXITED(status)) { // child exited normally
+        return (WEXITSTATUS(status) == 0);
+    }
+
+    return false;
 }
