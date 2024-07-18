@@ -24,7 +24,7 @@ if ! [ -d "${FILESDIR}" ]; then
 fi
 
 FILECNT=$(find "${FILESDIR}" -type f | wc -l)
-MATCHCNT=$(grep --count --recursive "${SEARCHSTR}" "${FILESDIR}" | awk -F: '{s+=$2} END {print s}')
+MATCHCNT=$(grep -rc "${SEARCHSTR}" "${FILESDIR}" | awk -F: '{s+=$2} END {print s}')
 
 echo "The number of files are ${FILECNT} and the number of matching lines are ${MATCHCNT}."
 
