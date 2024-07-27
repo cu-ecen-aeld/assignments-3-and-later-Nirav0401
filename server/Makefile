@@ -14,11 +14,11 @@ endif
 SRC = aesdsocket.c
 OBJ = $(SRC:.c=.o)
 
-# Default target: build the writer application
+# Default target: build the aesdsocket application
 all: aesdsocket
 
-# Rule to build the writer application
-writer: $(OBJ)
+# Rule to build the aesdsocket application
+aesdsocket: $(OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # Rule to build object files
