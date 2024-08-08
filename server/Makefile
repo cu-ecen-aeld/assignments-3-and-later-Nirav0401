@@ -11,7 +11,7 @@ CC = $(CROSS_COMPILE)gcc
 endif
 
 # Source files
-SRC = aesdsocket.c
+SRC = aesdsocket.c timer.c
 OBJ = $(SRC:.c=.o)
 
 # Default target: build the aesdsocket application
